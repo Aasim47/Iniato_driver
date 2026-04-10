@@ -26,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DriverProfile? _profile;
   bool _isOnline = false;
   bool _isTogglingStatus = false;
+  bool _hasCenteredOnUser = false;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final position = await _locationService.getCurrentPosition();
     if (position != null && mounted) {
       setState(() => _currentPosition = position);
+      _flyToUser(position);
     }
     _locationService.startTracking(
       onPosition: (pos) {
@@ -82,28 +84,54 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onMapCreated(MapboxMap controller) {
     _mapController = controller;
+
+    // Enable the blue location puck (dot) with pulsing ring
     _mapController?.location.updateSettings(
       LocationComponentSettings(
         enabled: true,
         pulsingEnabled: true,
+        showAccuracyRing: true,
       ),
+    );
+
+    // If we already have the user's position, fly to it now
+    if (_currentPosition != null && !_hasCenteredOnUser) {
+      _flyToUser(_currentPosition!);
+    }
+  }
+
+  /// Fly the map camera to the given position.
+  void _flyToUser(gl.Position position) {
+    if (_mapController == null) return;
+    _hasCenteredOnUser = true;
+    _mapController!.flyTo(
+      CameraOptions(
+        center: Point(
+          coordinates: Position(
+            position.longitude,
+            position.latitude,
+          ),
+        ),
+        zoom: 15.0,
+      ),
+      MapAnimationOptions(duration: 1500),
     );
   }
 
-  void _centerOnUser() {
-    if (_currentPosition != null && _mapController != null) {
-      _mapController!.flyTo(
-        CameraOptions(
-          center: Point(
-            coordinates: Position(
-              _currentPosition!.longitude,
-              _currentPosition!.latitude,
-            ),
-          ),
-          zoom: 15.0,
-        ),
-        MapAnimationOptions(duration: 1000),
-      );
+  Future<void> _centerOnUser() async {
+    final pos = await _locationService.getCurrentPosition();
+    if (pos != null) {
+      if (mounted) setState(() => _currentPosition = pos);
+      _flyToUser(pos);
+    } else if (_currentPosition != null) {
+      // Fallback to last known position
+      _flyToUser(_currentPosition!);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location unavailable. Please check permissions.')),
+        );
+      }
     }
   }
 
@@ -120,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) => CreateRouteScreen(
           currentLat: _currentPosition!.latitude,
           currentLng: _currentPosition!.longitude,
+          driverId: _profile?.driverId,
         ),
       ),
     );
@@ -143,7 +172,26 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         children: [
           // ─── Full-screen Map ───
-          MapWidget(onMapCreated: _onMapCreated),
+          MapWidget(
+            onMapCreated: _onMapCreated,
+            cameraOptions: _currentPosition != null
+                ? CameraOptions(
+                    center: Point(
+                      coordinates: Position(
+                        _currentPosition!.longitude,
+                        _currentPosition!.latitude,
+                      ),
+                    ),
+                    zoom: 15.0,
+                  )
+                : CameraOptions(
+                    // Default: center of India as fallback
+                    center: Point(
+                      coordinates: Position(78.9629, 20.5937),
+                    ),
+                    zoom: 5.0,
+                  ),
+          ),
 
           // ─── Top Bar: Status Toggle ───
           Positioned(

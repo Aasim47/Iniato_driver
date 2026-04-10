@@ -11,11 +11,13 @@ import 'active_route_screen.dart';
 class CreateRouteScreen extends StatefulWidget {
   final double currentLat;
   final double currentLng;
+  final int? driverId;
 
   const CreateRouteScreen({
     super.key,
     required this.currentLat,
     required this.currentLng,
+    this.driverId,
   });
 
   @override
@@ -105,7 +107,7 @@ class _CreateRouteScreenState extends State<CreateRouteScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => ActiveRouteScreen(route: route),
+            builder: (_) => ActiveRouteScreen(route: route, driverId: widget.driverId),
           ),
         );
       } else {

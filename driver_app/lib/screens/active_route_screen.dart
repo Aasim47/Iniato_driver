@@ -15,8 +15,9 @@ import '../widgets/passenger_card.dart';
 /// Live route tracking — shows map, passenger list, and route controls.
 class ActiveRouteScreen extends StatefulWidget {
   final RouteModel route;
+  final int? driverId;
 
-  const ActiveRouteScreen({super.key, required this.route});
+  const ActiveRouteScreen({super.key, required this.route, this.driverId});
 
   @override
   State<ActiveRouteScreen> createState() => _ActiveRouteScreenState();
@@ -96,12 +97,12 @@ class _ActiveRouteScreenState extends State<ActiveRouteScreen> {
   }
 
   void _sendLocationUpdate(gl.Position pos) {
-    if (_wsService.isConnected) {
+    if (_wsService.isConnected && widget.driverId != null && _route.rideId != null) {
       _wsService.sendLocationUpdate(
-        driverId: 0, // Will be resolved server-side from auth
+        driverId: widget.driverId!,
         latitude: pos.latitude,
         longitude: pos.longitude,
-        rideId: _route.rideId ?? 0,
+        rideId: _route.rideId!,
       );
     }
   }

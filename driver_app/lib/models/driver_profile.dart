@@ -1,5 +1,6 @@
 /// Driver profile returned by GET /api/driver/profile.
 class DriverProfile {
+  final int? driverId;
   final String email;
   final String fullName;
   final String phoneNumber;
@@ -8,6 +9,7 @@ class DriverProfile {
   final String status; // ONLINE or OFFLINE
 
   DriverProfile({
+    this.driverId,
     required this.email,
     required this.fullName,
     required this.phoneNumber,
@@ -18,6 +20,7 @@ class DriverProfile {
 
   factory DriverProfile.fromJson(Map<String, dynamic> json) {
     return DriverProfile(
+      driverId: json['driverId'],
       email: json['email'] ?? '',
       fullName: json['fullName'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
